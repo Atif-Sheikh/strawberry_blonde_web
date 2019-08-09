@@ -2,13 +2,14 @@ import React from 'react';
 import {
   Navbar,
   NavbarBrand,
-  TabContent, TabPane, Nav, NavItem, NavLink, Card, Button, CardTitle, CardText, Row, Col,
+  TabContent, TabPane, Nav, NavItem, NavLink, Button, Row, Col,
   Spinner,
-  Form, FormGroup, Label, Input, FormText
+  Form, FormGroup, Label, Input
 } from 'reactstrap';
 import * as firebase from 'firebase';
 import classnames from 'classnames';
 import './App.css';
+import { SecondTab } from './components/secondTab';
 
 class App extends React.Component {
   state = {
@@ -17,8 +18,30 @@ class App extends React.Component {
     price: 0,
     type: 'Best Collection',
     imgUri: '',
-    loading: false
+    loading: false,
+    bestCollections: [],
+    womenColths: [],
+    accessories: []
   };
+
+  componentDidMount() {
+    firebase.database().ref(`/products`).on('value', snap => {
+      let data = snap.val();
+      let accessories = [];
+      let womenColths = [];
+      let bestCollections = [];
+      for(let key in data) {
+        if(data[key].type === "Best Collection"){
+          bestCollections.push({ ...data[key], key })
+        }else if(data[key].type === "Women Cloths") {
+          womenColths.push({ ...data[key], key });
+        }else if(data[key].type === "Accessories") {
+          accessories.push({ ...data[key], key });
+        }
+      }
+      this.setState({ accessories, womenColths, bestCollections });
+    });
+  }
 
   toggle = (tab) => {
     if (this.state.activeTab !== tab) {
@@ -69,11 +92,9 @@ class App extends React.Component {
     const { title, price, type } = this.state;
     try {
       const resp = await firebase.database().ref(`products/`).push({ title, price, type, imageUri });
-      this.setState({ loading: false });
-      console.log(resp, "success  yahOooooooo");
+      this.setState({ loading: false, imageUri: null });
     } catch (err) {
       this.setState({ loading: false });
-      console.log(err, "errrrrrorrrrr");
     }
 
   };
@@ -88,7 +109,7 @@ class App extends React.Component {
   }
 
   render() {
-    const { type } = this.state;
+    const { type, bestCollections, womenColths, accessories } = this.state;
     return (
       <div className="App">
         <Navbar color="light" light expand="md">
@@ -118,7 +139,15 @@ class App extends React.Component {
                 className={classnames({ active: this.state.activeTab === '3' })}
                 onClick={() => { this.toggle('3'); }}
               >
-                Women
+                Women Cloths
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink
+                className={classnames({ active: this.state.activeTab === '4' })}
+                onClick={() => { this.toggle('4'); }}
+              >
+                Accessories
               </NavLink>
             </NavItem>
           </Nav>
@@ -139,16 +168,13 @@ class App extends React.Component {
                       <Label for="category">Select Product Category</Label>
                       <Input value={type} onChange={this.handleOnChange} type="select" name="type" id="category">
                         <option>Best Collection</option>
-                        <option>Women</option>
+                        <option>Women Cloths</option>
+                        <option>Accessories</option>
                       </Input>
                     </FormGroup>
                     <FormGroup>
                       <Label for="image">Upload Image</Label>
                       <Input type="file" onChange={this.onImageChange} name="file" id="image" />
-                      {/* <FormText color="muted">
-                        This is some placeholder block-level help text for the above input.
-                        It's a bit lighter and easily wraps to a new line.
-                      </FormText> */}
                     </FormGroup>
                     {
                       this.handleContent()
@@ -158,29 +184,37 @@ class App extends React.Component {
               </Row>
             </TabPane>
             <TabPane tabId="2">
-              <Row>
-                <Col sm="6">
-                  <Card body>
-                    <CardTitle>Special Title Treatment</CardTitle>
-                    <CardText>With supporting text below as a natural lead-in to additional content.</CardText>
-                    <Button>Go somewhere</Button>
-                  </Card>
-                </Col>
-                <Col sm="6">
-                  <Card body>
-                    <CardTitle>Special Title Treatment</CardTitle>
-                    <CardText>With supporting text below as a natural lead-in to additional content.</CardText>
-                    <Button>Go somewhere</Button>
-                  </Card>
-                </Col>
-              </Row>
+              <div style={{ paddingTop: '20px' }}>
+                <Row>
+                  {
+                    bestCollections && bestCollections.length ?
+                    bestCollections.map((data, ind) => <SecondTab {...data} key={ind} />)
+                    : null
+                  }
+                </Row>
+              </div>
             </TabPane>
             <TabPane tabId="3">
-              <Row>
-                <Col sm="12">
-                  <h4>Tab 3 Contents</h4>
-                </Col>
-              </Row>
+              <div style={{ paddingTop: '20px' }}>
+                <Row>
+                  {
+                    womenColths && womenColths.length ?
+                    womenColths.map((data, ind) => <SecondTab {...data} key={ind} />)
+                    : null
+                  }
+                </Row>
+              </div>
+            </TabPane>
+            <TabPane tabId="4">
+              <div style={{ paddingTop: '20px' }}>
+                <Row>
+                  {
+                    accessories && accessories.length ?
+                    accessories.map((data, ind) => <SecondTab {...data} key={ind} />)
+                    : null
+                  }
+                </Row>
+              </div>
             </TabPane>
           </TabContent>
         </div>
@@ -190,37 +224,3 @@ class App extends React.Component {
 }
 
 export default App;
-
-
-
-/*
-uploadFile = (uri) => {
-    let timestamp = (Date.now() / 1000 | 0).toString();
-    let api_key = '628766992677356'
-    let api_secret = 'j0AhW_lMX9zakkaA9ZT5MBLXfkE'
-    let cloud = 'atif786'
-    var PRESET_URL = "aheer_preset"
-    let hash_string = 'timestamp=' + timestamp + api_secret
-    let signature = hash_string.toString();
-    let upload_url = 'https://api.cloudinary.com/v1_1/' + cloud + '/image/upload'
-
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', upload_url);
-    xhr.onload = () => {
-      var url = xhr
-      const res = url._response
-      var cloudImgUrl = JSON.parse(res);
-      this.optimizeImage(cloudImgUrl.url);
-
-
-    };
-    let formdata = new FormData();
-    formdata.append('file', { uri: uri, type: 'image/png', name: 'upload.png' });
-    formdata.append("upload_preset", PRESET_URL)
-    formdata.append('timestamp', timestamp);
-    formdata.append('api_key', api_key);
-    // formdata.append('signature', signature);
-    xhr.send(formdata)
-  }
-
-*/
